@@ -2,6 +2,7 @@ import {
   UserObject,
   UserAnswer,
   UserSaver,
+  UserIndex,
 } from '../interface/interface';
 import { ErrorsGame } from '../errors/errors';
 
@@ -49,7 +50,6 @@ class User {
   }
 
   public login(user: UserObject): UserAnswer {
-    console.log(this.users)
     if (
       this.users.entries[user['name']]
     ) {
