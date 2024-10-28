@@ -4,7 +4,7 @@
     "description": "Template for the WebSocket remote control task",
     "main": "index.js",
     "scripts": {
-        "start": "ts-node src/ws_server/index.ts",
+        "start": "node ./index.js",
         "start:dev": "ts-node-dev --respawn --transpile-only src/ws_server/index.ts",
         "test": "echo \"Error: no test specified\" && exit 1",
         "build": "webpack --config webpack.config.cjs",

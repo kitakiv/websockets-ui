@@ -120,8 +120,10 @@ class Game {
     const x = parseInt(position.x as unknown as string);
     const y = parseInt(position.y as unknown as string);
     const enemyField = this.game.entries[gameId].ships[enemyIndex].doneShips;
-    if (enemyField[y][x] === 0) {
-      enemyField[y][x] = 3;
+    if (enemyField[y][x] === 0 || enemyField[y][x] === 3 || enemyField[y][x] === 2) {
+      if (enemyField[y][x] !== 2) {
+        enemyField[y][x] = 3;
+      }
       return {
         status: AttackType.MISS,
       };
