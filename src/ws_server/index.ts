@@ -3,6 +3,7 @@ import { config } from 'dotenv';
 import UserCommands from './userCommands/useCommands';
 import {
   Attack,
+  AttackResult,
   ClientMessage,
   Ships,
   UserObject,
@@ -44,6 +45,7 @@ class WsServer {
     currentUserInfo: currentUser,
   ) {
     const { type, data, id } = JSON.parse(message) as ClientMessage;
+    console.log(JSON.parse(message))
     switch (type) {
       case TypeMessage.REGISTER:
         this.register(data, ws, id, type, currentUserInfo);
@@ -93,47 +95,57 @@ class WsServer {
     const attack = JSON.parse(data) as Attack;
     const result = this.userCommands.attackPlayer(attack);
     if (result) {
-      result.users.forEach((user) => {
-        this.usersWs.get(parseInt(user as unknown as string))?.send(
-          JSON.stringify({
-            type: TypeMessage.ATTACK,
-            id,
-            data: JSON.stringify({
-              position: { x: attack.x, y: attack.y },
-              status: result.status,
-              currentPlayer: attack.indexPlayer,
-            }),
-          }),
-        );
-      })
+      this.attackFeedback(attack, result);
       if (result.status === AttackType.MISS) {
         this.userCommands.changeTurn(attack.gameId, result.player);
-        result.users.forEach((user) => {
-          this.usersWs.get(parseInt(user as unknown as string))?.send(
-            JSON.stringify({
-              type: TypeMessage.TURN,
-              id,
-              data: JSON.stringify({
-                currentPlayer: result.player,
-              }),
-            }),
-          );
-        });
+        const data = JSON.stringify({
+          currentPlayer: result.player,
+        })
+        this.sendUsers(data, id, TypeMessage.TURN, result.users);
       } else {
         this.userCommands.changeTurn(attack.gameId, attack.indexPlayer);
-        result.users.forEach((user) => {
-          this.usersWs.get(parseInt(user as unknown as string))?.send(
-            JSON.stringify({
-              type: TypeMessage.TURN,
-              id,
-              data: JSON.stringify({
-                currentPlayer: attack.indexPlayer,
-              }),
-            }),
-          );
-        });
+        const data = JSON.stringify({
+          currentPlayer: attack.indexPlayer,
+        })
+        this.sendUsers(data, id, TypeMessage.TURN, result.users);
+      }
+      if (result.finish) {
+        const data = JSON.stringify({
+          winPlayer: attack.indexPlayer
+        })
+        this.sendUsers(data, id, TypeMessage.FINISH, result.users);
+        const winners = this.userCommands.countWinner((attack.indexPlayer) as number);
+        console.log(winners);
+        this.sendToClients(
+          JSON.stringify({
+            type: TypeMessage.UPDATE_WINNERS,
+            id,
+            data: JSON.stringify(winners),
+          }),
+        );
       }
     }
+  }
+
+  private attackFeedback(attack: Attack, result: AttackResult) {
+    const data = JSON.stringify({
+        position: { x: attack.x, y: attack.y },
+        status: result.status,
+        currentPlayer: attack.indexPlayer,
+    })
+    this.sendUsers(data, 0, TypeMessage.ATTACK, result.users);
+  }
+
+  private sendUsers(data: string, id: number, type: TypeMessage, users: (string | number)[]) {
+    users.forEach((user) => {
+      this.usersWs.get(parseInt(user as unknown as string))?.send(
+        JSON.stringify({
+          type,
+          id,
+          data,
+        }),
+      );
+    })
   }
 
   private addShips(data: string, id: number) {
@@ -155,17 +167,10 @@ class WsServer {
       });
       const player = parseInt(keys[0]);
       this.userCommands.changeTurn(ships.gameId, player);
-      keys.forEach((key) => {
-        this.usersWs.get(parseInt(key))?.send(
-          JSON.stringify({
-            type: TypeMessage.TURN,
-            id,
-            data: JSON.stringify({
-              currentPlayer: player,
-            }),
-          }),
-        );
-      });
+      const data = JSON.stringify({
+        currentPlayer: player,
+      })
+      this.sendUsers(data, id, TypeMessage.TURN, keys);
     }
   }
 
@@ -212,7 +217,6 @@ class WsServer {
       index: currentUserInfo.currentUser.index,
     });
     const game = this.userCommands.createGame(roomWithUsers.roomUsers);
-    game.idGame = id;
     game.idPlayer.forEach((user) => {
       this.usersWs.get(user.index)?.send(
         JSON.stringify({

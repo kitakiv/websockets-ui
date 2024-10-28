@@ -6,6 +6,17 @@ class Winners {
     this.winners = {};
   }
 
+  public getWinners() {
+    return [...Object.values(this.winners)];
+  }
+
+  public updateWinners(name: string) {
+    if (this.winners[name]) {
+      this.winners[name].wins += 1;
+    }
+    return [...Object.values(this.winners)];
+  }
+
   public addWinner(name: string) {
     if (!this.winners[name]) {
       this.winners[name] = {

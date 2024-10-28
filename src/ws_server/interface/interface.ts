@@ -1,4 +1,4 @@
-import { TypeMessage } from './messageType';
+import { AttackType, TypeMessage } from './messageType';
 
 export interface UserObject {
   name: string;
@@ -59,6 +59,13 @@ export interface Attack {
   indexPlayer: string | number;
   x: number;
   y: number;
+}
+
+export interface AttackResult {
+  users: (string | number)[];
+    player: number;
+    finish: boolean;
+    status: AttackType;
 }
 
 export interface Ships {

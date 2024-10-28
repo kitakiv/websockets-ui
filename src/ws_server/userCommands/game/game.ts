@@ -18,25 +18,27 @@ class Game {
 
   public createGame(users: { name: string; index: number | string }[]) {
     const addedGame = {
-      idGame: this.game.ids.length,
+      idGame: 0,
       idPlayer: users,
       gamers: [],
       ships: {},
       turn: 0,
     };
+    addedGame.idGame = this.game.ids.length;
     this.game.ids.push(addedGame.idGame);
     this.game.entries[addedGame.idGame] = addedGame;
+    console.log(this.game.entries, 'entries');
     return this.game.entries[addedGame.idGame];
   }
 
   public addShip(data: Ships) {
     const field = this.makeArray(data.ships);
-    console.log(field, data.indexPlayer);
     this.game.entries[data.gameId].ships[data.indexPlayer] = {
       currentShips: data.ships,
       doneShips: field,
     };
     this.game.entries[data.gameId].gamers.push(data.indexPlayer);
+    console.log(this.game.entries, 'ass ships');
     return this.game.entries[data.gameId].ships;
   }
 
@@ -47,7 +49,6 @@ class Game {
     game.gamers[0] === indexPlayer
         ? game.gamers[1]
         : game.gamers[0];
-    console.log(game.ships, 'ships');
     if (game.turn === indexPlayer) {
       const result = this.checkField(
         { x, y },
@@ -58,6 +59,7 @@ class Game {
         ...result,
         users: this.game.entries[gameId].gamers,
         player: parseInt(enemy as unknown as string),
+        finish: this.finishGame(game.ships[enemy].doneShips),
       };
       return resultWithUsers;
     }
@@ -83,6 +85,17 @@ class Game {
     return position;
   }
 
+  private finishGame(enemyField: number[][]) {
+    for (let i = 0; i < 10; i++) {
+      for (let j = 0; j < 10; j++) {
+        if (enemyField[i][j] === 1) {
+          return false;
+        }
+      }
+    }
+    return true;
+  }
+
   private checkField(
     position: { x: number; y: number },
     enemyIndex: number,
@@ -91,7 +104,6 @@ class Game {
     const x = parseInt(position.x as unknown as string);
     const y = parseInt(position.y as unknown as string);
     const enemyField = this.game.entries[gameId].ships[enemyIndex].doneShips;
-    console.log(enemyField, x, y);
     if (enemyField[y][x] === 0) {
       enemyField[y][x] = 3;
       return {

@@ -49,6 +49,14 @@ class User {
     }
   }
 
+  public getUser(index: number) {
+    for (const names in this.users.entries) {
+      if (this.users.entries[names].index === index) {
+        return this.users.entries[names].name;
+      }
+    }
+  }
+
   public login(user: UserObject): UserAnswer {
     if (
       this.users.entries[user['name']]

@@ -56,4 +56,15 @@ export default class UserCommands {
     public changeTurn(gameId: number | string, indexPlayer: number | string) {
         this.game.changeTurn(gameId, indexPlayer);
     }
+
+    public getWinners() {
+        return this.winners.getWinners();
+    }
+
+    public countWinner(index: number) {
+        const name =this.users.getUser(index);
+        if (name) {
+           return this.winners.updateWinners(name);
+        }
+    }
 }
