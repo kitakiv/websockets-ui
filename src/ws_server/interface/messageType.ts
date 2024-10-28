@@ -12,3 +12,9 @@ export enum TypeMessage {
     TURN = 'turn',
     FINISH = 'finish',
 }
+
+export enum AttackType {
+    SHOOT = 'shot',
+    KILL = 'killed',
+    MISS = 'miss',
+}

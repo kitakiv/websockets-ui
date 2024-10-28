@@ -42,6 +42,8 @@ export interface GameObject {
     [key: string]: {
       idGame: string | number;
       idPlayer: { name: string; index: number | string }[];
+      gamers: (number | string)[];
+      turn : number | string;
       ships: {
         [key: string | number]: {
             currentShips: ShipsObject[];
@@ -50,6 +52,13 @@ export interface GameObject {
       };
     };
   };
+}
+
+export interface Attack {
+  gameId: string | number;
+  indexPlayer: string | number;
+  x: number;
+  y: number;
 }
 
 export interface Ships {

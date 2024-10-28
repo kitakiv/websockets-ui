@@ -1,5 +1,5 @@
 import userLoginRegister from "../data/user";
-import { Ships, UserObject } from "../interface/interface";
+import { Attack, Ships, UserObject } from "../interface/interface";
 import Rooms from "./rooms/rooms";
 import Winners from "./winners/winners";
 import Game from "./game/game";
@@ -43,5 +43,17 @@ export default class UserCommands {
 
     public addShip(data: Ships) {
         return this.game.addShip(data);
+    }
+
+    public attackPlayer(data: Attack) {
+        return this.game.attackPlayer(data);
+    }
+
+    public randomAttack(gameId: number | string, indexPlayer: number | string) {
+        return this.game.randomAttack(gameId, indexPlayer);
+    }
+
+    public changeTurn(gameId: number | string, indexPlayer: number | string) {
+        this.game.changeTurn(gameId, indexPlayer);
     }
 }

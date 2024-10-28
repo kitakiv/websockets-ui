@@ -1,8 +1,13 @@
 import { WebSocketServer, WebSocket } from 'ws';
 import { config } from 'dotenv';
 import UserCommands from './userCommands/useCommands';
-import { ClientMessage, Ships, UserObject } from './interface/interface';
-import { TypeMessage } from './interface/messageType';
+import {
+  Attack,
+  ClientMessage,
+  Ships,
+  UserObject,
+} from './interface/interface';
+import { AttackType, TypeMessage } from './interface/messageType';
 import currentUser from './data/currentUser';
 config();
 
@@ -18,7 +23,7 @@ class WsServer {
   private connectServer() {
     this.wss.on('connection', (ws: WebSocket) => {
       console.log(`client connected`);
-      const currentUserInfo = new currentUser({ name: '', index: ''});
+      const currentUserInfo = new currentUser({ name: '', index: '' });
       ws.on('message', (data: string) => {
         this.switchCommand(
           JSON.stringify(JSON.parse(data)),
@@ -47,13 +52,87 @@ class WsServer {
         this.createRoom(id, currentUserInfo);
         break;
       case TypeMessage.ADD_USER_TO_ROOM:
-        this.addUserToRoom(data, id,currentUserInfo);
+        this.addUserToRoom(data, id, currentUserInfo);
         break;
-    case TypeMessage.ADD_SHIPS:
+      case TypeMessage.ADD_SHIPS:
         this.addShips(data, id);
+        break;
+      case TypeMessage.ATTACK:
+        this.attackPlayer(data, id);
+        break;
+      case TypeMessage.RANDOM_ATTACK:
+        this.randomAttack(data, id);
+        break;
       default:
         console.log(JSON.parse(message));
         break;
+    }
+  }
+
+  private randomAttack(data: string, id: number) {
+    const attack = JSON.parse(data) as {
+      gameId: number | string;
+      indexPlayer: number | string;
+    };
+    const position = this.userCommands.randomAttack(
+      attack.gameId,
+      attack.indexPlayer,
+    );
+    this.attackPlayer(
+      JSON.stringify({
+        gameId: attack.gameId,
+        indexPlayer: attack.indexPlayer,
+        x: position.x,
+        y: position.y,
+      }),
+      id,
+    );
+  }
+
+  private attackPlayer(data: string, id: number) {
+    const attack = JSON.parse(data) as Attack;
+    const result = this.userCommands.attackPlayer(attack);
+    if (result) {
+      result.users.forEach((user) => {
+        this.usersWs.get(parseInt(user as unknown as string))?.send(
+          JSON.stringify({
+            type: TypeMessage.ATTACK,
+            id,
+            data: JSON.stringify({
+              position: { x: attack.x, y: attack.y },
+              status: result.status,
+              currentPlayer: attack.indexPlayer,
+            }),
+          }),
+        );
+      })
+      if (result.status === AttackType.MISS) {
+        this.userCommands.changeTurn(attack.gameId, result.player);
+        result.users.forEach((user) => {
+          this.usersWs.get(parseInt(user as unknown as string))?.send(
+            JSON.stringify({
+              type: TypeMessage.TURN,
+              id,
+              data: JSON.stringify({
+                currentPlayer: result.player,
+              }),
+            }),
+          );
+        });
+      } else {
+        this.userCommands.changeTurn(attack.gameId, attack.indexPlayer);
+        result.users.forEach((user) => {
+          this.usersWs.get(parseInt(user as unknown as string))?.send(
+            JSON.stringify({
+              type: TypeMessage.TURN,
+              id,
+              data: JSON.stringify({
+                currentPlayer: attack.indexPlayer,
+              }),
+            }),
+          );
+        });
+      }
     }
   }
 
@@ -61,24 +140,32 @@ class WsServer {
     const ships = JSON.parse(data) as Ships;
     const game = this.userCommands.addShip(ships);
     if (Object.keys(game).length === 2) {
-        const keys = Object.keys(game);
-        keys.forEach((key) => {
-            this.usersWs.get(parseInt(key))?.send(JSON.stringify({
-                type: TypeMessage.START_GAME,
-                id,
-                data: JSON.stringify({
-                    ships: game[key].currentShips,
-                    currentPlayerIndex: key
-                })
-            }));
-        })
-        this.usersWs.get(parseInt(keys[0]))?.send(JSON.stringify({
+      const keys = Object.keys(game);
+      keys.forEach((key) => {
+        this.usersWs.get(parseInt(key))?.send(
+          JSON.stringify({
+            type: TypeMessage.START_GAME,
+            id,
+            data: JSON.stringify({
+              ships: game[key].currentShips,
+              currentPlayerIndex: key,
+            }),
+          }),
+        );
+      });
+      const player = parseInt(keys[0]);
+      this.userCommands.changeTurn(ships.gameId, player);
+      keys.forEach((key) => {
+        this.usersWs.get(parseInt(key))?.send(
+          JSON.stringify({
             type: TypeMessage.TURN,
             id,
             data: JSON.stringify({
-                currentPlayer: parseInt(keys[1])
-            })
-        }));
+              currentPlayer: player,
+            }),
+          }),
+        );
+      });
     }
   }
 
@@ -91,10 +178,10 @@ class WsServer {
   ) {
     const user = this.userCommands.login(JSON.parse(data) as UserObject);
     const answer = { type, id, data: JSON.stringify(user) };
-    currentUserInfo.updateUser({ name: user.name, index: user.index});
+    currentUserInfo.updateUser({ name: user.name, index: user.index });
     ws.send(JSON.stringify(answer));
     if (!user.error) {
-        this.usersWs.set(user.index, ws);
+      this.usersWs.set(user.index, ws);
       const winners = this.userCommands.updateWinners(user.name);
       this.sendToClients(
         JSON.stringify({
@@ -137,7 +224,7 @@ class WsServer {
           }),
         }),
       );
-    })
+    });
     const rooms = this.userCommands.updateRooms();
     this.sendToClients(
       JSON.stringify({
