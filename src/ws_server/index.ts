@@ -45,13 +45,15 @@ class WsServer {
     currentUserInfo: currentUser,
   ) {
     const { type, data, id } = JSON.parse(message) as ClientMessage;
-    console.log(JSON.parse(message))
     switch (type) {
       case TypeMessage.REGISTER:
         this.register(data, ws, id, type, currentUserInfo);
         break;
       case TypeMessage.CREATE_ROOM:
         this.createRoom(id, currentUserInfo);
+        break;
+      case TypeMessage.SINGLE_PLAY:
+        this.singlePlay(ws, id, type, currentUserInfo);
         break;
       case TypeMessage.ADD_USER_TO_ROOM:
         this.addUserToRoom(data, id, currentUserInfo);
@@ -69,6 +71,29 @@ class WsServer {
         console.log(JSON.parse(message));
         break;
     }
+  }
+
+  private singlePlay(ws: WebSocket, id: number, type: TypeMessage, currentUserInfo: currentUser) {
+    const bot = {
+      name: 'bot',
+      index: 0 - (parseInt(currentUserInfo.getUser().index as unknown as string) + 1),
+    }
+    const user = currentUserInfo.getUser();
+    const game = this.userCommands.createGame([bot, user]);
+    ws.send(JSON.stringify({
+      type: TypeMessage.CREATE_GAME,
+        id,
+        data: JSON.stringify({
+          idGame: game.idGame,
+          idPlayer: user.index,
+        })
+    }))
+    const ships = this.userCommands.randomShips();
+    this.userCommands.addBotShip({
+      gameId: game.idGame,
+      indexPlayer: bot.index,
+      ships,
+    })
   }
 
   private randomAttack(data: string, id: number) {
@@ -102,12 +127,24 @@ class WsServer {
           currentPlayer: result.player,
         })
         this.sendUsers(data, id, TypeMessage.TURN, result.users);
+        if (result.player < 0) {
+          this.randomAttack(JSON.stringify({
+            gameId: attack.gameId,
+            indexPlayer: result.player,
+          }), id);
+        }
       } else {
         this.userCommands.changeTurn(attack.gameId, attack.indexPlayer);
         const data = JSON.stringify({
           currentPlayer: attack.indexPlayer,
         })
         this.sendUsers(data, id, TypeMessage.TURN, result.users);
+        if (parseInt(attack.indexPlayer as unknown as string) < 0) {
+          this.randomAttack(JSON.stringify({
+            gameId: attack.gameId,
+            indexPlayer: attack.indexPlayer,
+          }), id);
+        }
       }
       if (result.finish) {
         const data = JSON.stringify({
@@ -115,7 +152,6 @@ class WsServer {
         })
         this.sendUsers(data, id, TypeMessage.FINISH, result.users);
         const winners = this.userCommands.countWinner((attack.indexPlayer) as number);
-        console.log(winners);
         this.sendToClients(
           JSON.stringify({
             type: TypeMessage.UPDATE_WINNERS,
@@ -171,6 +207,9 @@ class WsServer {
         currentPlayer: player,
       })
       this.sendUsers(data, id, TypeMessage.TURN, keys);
+      if (player < 0) {
+        this.userCommands.randomAttack(ships.gameId, player);
+      }
     }
   }
 

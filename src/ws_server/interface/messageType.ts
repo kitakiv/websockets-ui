@@ -11,6 +11,7 @@ export enum TypeMessage {
     START_GAME = 'start_game',
     TURN = 'turn',
     FINISH = 'finish',
+    SINGLE_PLAY = 'single_play',
 }
 
 export enum AttackType {

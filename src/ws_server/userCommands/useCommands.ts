@@ -67,4 +67,15 @@ export default class UserCommands {
            return this.winners.updateWinners(name);
         }
     }
+    public addBotShip(data:{
+        gameId: number | string;
+        indexPlayer: number | string;
+        ships: number[][];}
+      ) {
+        return this.game.addBotShip(data);
+      }
+
+  public randomShips() {
+    return this.game.randomShips();
+  }
 }

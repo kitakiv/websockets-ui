@@ -22,7 +22,6 @@ class Rooms {
 
         this.rooms.ids.push(addedRoom.roomId);
         this.rooms.entries[addedRoom.roomId] = addedRoom;
-        console.log(this.rooms.entries);
     }
 
     public addUserToRoom(roomId: number, { name, index }: { name: string; index: number | string }) {
