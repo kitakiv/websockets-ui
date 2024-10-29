@@ -3,19 +3,36 @@
     "version": "1.0.0",
     "description": "Template for the WebSocket remote control task",
     "main": "index.js",
-    "type": "module",
     "scripts": {
         "start": "node ./index.js",
-        "start:dev": "nodemon ./index.js",
-        "test": "echo \"Error: no test specified\" && exit 1"
+        "start:dev": "ts-node-dev --respawn --transpile-only src/ws_server/index.ts",
+        "test": "echo \"Error: no test specified\" && exit 1",
+        "build": "webpack --config webpack.config.cjs",
+        "lint": "eslint src/ws_server**/*.{ts,js}",
+        "format": "prettier --write '**/*.{ts,js}'"
     },
     "author": "Andrei Auchynnikau",
     "keywords": [],
     "license": "ISC",
     "devDependencies": {
-        "nodemon": "^2.0.16"
+        "@eslint/js": "^9.13.0",
+        "@types/ws": "^8.5.12",
+        "eslint": "^9.13.0",
+        "globals": "^15.11.0",
+        "nodemon": "^2.0.16",
+        "prettier": "^3.3.3",
+        "typescript": "^5.6.3",
+        "typescript-eslint": "^8.11.0",
+        "webpack-cli": "^5.1.4"
     },
     "dependencies": {
-        "ws": "^8.8.0"
+        "dotenv": "^16.4.5",
+        "dotenv-webpack": "^8.1.0",
+        "ts-loader": "^9.5.1",
+        "ts-node": "^10.9.2",
+        "ts-node-dev": "^2.0.0",
+        "webpack": "^5.95.0",
+        "webpack-node-externals": "^3.0.0",
+        "ws": "^8.18.0"
     }
 }
